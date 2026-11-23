@@ -1,0 +1,1497 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>HomeSafe - Personal Safety Companion</title>
+  <!-- Telegram Web App SDK -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    :root {
+      --bg-primary: #090d16;
+      --bg-card: rgba(18, 26, 44, 0.75);
+      --bg-card-border: rgba(56, 189, 248, 0.15);
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent-cyan: #06b6d4;
+      --accent-blue: #3b82f6;
+      --accent-green: #10b981;
+      --accent-green-glow: rgba(16, 185, 129, 0.4);
+      --accent-red: #ef4444;
+      --accent-red-glow: rgba(239, 68, 68, 0.5);
+      --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      --safe-bottom: env(safe-area-inset-bottom, 16px);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg-primary);
+      background-image: 
+        radial-gradient(circle at 15% 15%, rgba(6, 182, 212, 0.12) 0%, transparent 40%),
+        radial-gradient(circle at 85% 85%, rgba(16, 185, 129, 0.1) 0%, transparent 45%);
+      color: var(--text-main);
+      font-family: var(--font-family);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+      padding-bottom: calc(var(--safe-bottom) + 20px);
+    }
+
+    /* Header */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: rgba(9, 13, 22, 0.85);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--accent-cyan), var(--accent-green));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-weight: bold;
+      box-shadow: 0 0 15px rgba(6, 182, 212, 0.35);
+    }
+
+    .brand-title {
+      font-size: 19px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+      background: linear-gradient(90deg, #f8fafc, #93c5fd);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .lang-toggle {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: var(--text-main);
+      font-weight: 600;
+      font-size: 13px;
+      padding: 7px 14px;
+      border-radius: 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.2s ease;
+    }
+
+    .lang-toggle:active {
+      transform: scale(0.95);
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    /* Container */
+    .container {
+      padding: 16px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      max-width: 480px;
+      margin: 0 auto;
+      width: 100%;
+      flex: 1;
+    }
+
+    /* Card styling */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--bg-card-border);
+      border-radius: 24px;
+      padding: 20px;
+      box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.3), transparent);
+    }
+
+    .card-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Timer Section */
+    .timer-display-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 10px 0 18px 0;
+      position: relative;
+    }
+
+    .timer-ring-container {
+      position: relative;
+      width: 220px;
+      height: 220px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .timer-svg {
+      transform: rotate(-90deg);
+      width: 100%;
+      height: 100%;
+    }
+
+    .timer-circle-bg {
+      stroke: rgba(255, 255, 255, 0.07);
+      stroke-width: 8;
+      fill: none;
+    }
+
+    .timer-circle-progress {
+      stroke: var(--accent-cyan);
+      stroke-width: 8;
+      fill: none;
+      stroke-linecap: round;
+      stroke-dasharray: 628;
+      stroke-dashoffset: 0;
+      transition: stroke-dashoffset 0.8s linear, stroke 0.4s ease;
+      filter: drop-shadow(0 0 8px rgba(6, 182, 212, 0.5));
+    }
+
+    .timer-text-content {
+      position: absolute;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+
+    .time-digits {
+      font-size: 46px;
+      font-weight: 800;
+      letter-spacing: 1px;
+      font-variant-numeric: tabular-nums;
+      color: #fff;
+      text-shadow: 0 0 16px rgba(56, 189, 248, 0.4);
+    }
+
+    .timer-sublabel {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: -2px;
+      font-weight: 500;
+    }
+
+    /* Duration Selector Buttons */
+    .duration-pills {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .pill-btn {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 14px;
+      padding: 10px 4px;
+      color: var(--text-main);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-align: center;
+    }
+
+    .pill-btn.active {
+      background: rgba(6, 182, 212, 0.2);
+      border-color: var(--accent-cyan);
+      color: #38bdf8;
+      box-shadow: 0 0 12px rgba(6, 182, 212, 0.3);
+    }
+
+    .pill-btn:active {
+      transform: scale(0.96);
+    }
+
+    /* Custom Input Row */
+    .custom-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 18px;
+      background: rgba(255, 255, 255, 0.03);
+      padding: 8px 14px;
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .custom-row span {
+      font-size: 13px;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+
+    .custom-input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: #fff;
+      font-size: 15px;
+      font-weight: 600;
+      text-align: right;
+    }
+
+    .custom-input::placeholder {
+      color: rgba(255, 255, 255, 0.25);
+    }
+
+    /* Action Buttons */
+    .btn-main {
+      width: 100%;
+      border: none;
+      border-radius: 18px;
+      padding: 17px 20px;
+      font-size: 17px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      letter-spacing: -0.2px;
+    }
+
+    .btn-main:active {
+      transform: scale(0.97);
+    }
+
+    .btn-start {
+      background: linear-gradient(135deg, #0ea5e9, #0284c7);
+      color: #fff;
+      box-shadow: 0 8px 24px -4px rgba(14, 165, 233, 0.45);
+    }
+
+    .btn-safe {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: #fff;
+      box-shadow: 0 8px 28px -4px var(--accent-green-glow);
+      font-size: 18px;
+      padding: 19px 20px;
+      animation: pulse-safe 2.5s infinite;
+    }
+
+    @keyframes pulse-safe {
+      0%, 100% {
+        box-shadow: 0 8px 24px -4px rgba(16, 185, 129, 0.45);
+      }
+      50% {
+        box-shadow: 0 10px 32px 2px rgba(16, 185, 129, 0.7);
+      }
+    }
+
+    .timer-active-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      width: 100%;
+    }
+
+    .btn-extend {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: var(--text-main);
+      padding: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      border-radius: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .btn-extend:active {
+      transform: scale(0.97);
+      background: rgba(255, 255, 255, 0.12);
+    }
+
+    /* Fast Action Cards Grid */
+    .actions-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .action-card {
+      background: var(--bg-card);
+      border: 1px solid var(--bg-card-border);
+      border-radius: 20px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 12px;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .action-card:active {
+      transform: scale(0.96);
+    }
+
+    .action-card.fake-call-btn {
+      background: linear-gradient(145deg, rgba(30, 41, 59, 0.7), rgba(15, 23, 42, 0.8));
+      border-color: rgba(99, 102, 241, 0.3);
+    }
+
+    .action-card.fake-call-btn:hover {
+      border-color: rgba(99, 102, 241, 0.6);
+      box-shadow: 0 0 20px rgba(99, 102, 241, 0.2);
+    }
+
+    .action-card.share-status-btn {
+      background: linear-gradient(145deg, rgba(30, 41, 59, 0.7), rgba(15, 23, 42, 0.8));
+      border-color: rgba(6, 182, 212, 0.3);
+    }
+
+    .action-card.share-status-btn:hover {
+      border-color: rgba(6, 182, 212, 0.6);
+      box-shadow: 0 0 20px rgba(6, 182, 212, 0.2);
+    }
+
+    .card-icon-box {
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+    }
+
+    .icon-call {
+      background: rgba(99, 102, 241, 0.18);
+      color: #818cf8;
+      box-shadow: 0 0 14px rgba(99, 102, 241, 0.25);
+    }
+
+    .icon-share {
+      background: rgba(6, 182, 212, 0.18);
+      color: #38bdf8;
+      box-shadow: 0 0 14px rgba(6, 182, 212, 0.25);
+    }
+
+    .action-card-text {
+      text-align: left;
+    }
+
+    .action-card-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 3px;
+    }
+
+    .action-card-desc {
+      font-size: 12px;
+      color: var(--text-muted);
+      line-height: 1.3;
+    }
+
+    /* Safe Notification Banner */
+    .status-toast {
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: #a7f3d0;
+      padding: 12px 16px;
+      border-radius: 16px;
+      font-size: 13px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* ========================================================
+       FULLSCREEN OVERLAY: REALISTIC FAKE CALL SCREEN
+    ======================================================== */
+    .fake-call-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: #000;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 60px 24px calc(var(--safe-bottom) + 30px) 24px;
+      backdrop-filter: blur(25px);
+      transform: translateY(100%);
+      transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .fake-call-overlay.active {
+      transform: translateY(0%);
+    }
+
+    .fake-call-top {
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .caller-avatar {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #475569, #334155);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 42px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+      position: relative;
+    }
+
+    .caller-avatar::after {
+      content: "";
+      position: absolute;
+      top: -6px;
+      left: -6px;
+      right: -6px;
+      bottom: -6px;
+      border-radius: 50%;
+      border: 2px solid rgba(255, 255, 255, 0.15);
+      animation: ripple 1.8s infinite ease-out;
+    }
+
+    @keyframes ripple {
+      0% { transform: scale(1); opacity: 0.8; }
+      100% { transform: scale(1.35); opacity: 0; }
+    }
+
+    .caller-name {
+      font-size: 28px;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: -0.5px;
+    }
+
+    .caller-status {
+      font-size: 15px;
+      color: rgba(255, 255, 255, 0.6);
+      font-weight: 400;
+    }
+
+    /* Mid call buttons (when connected) */
+    .in-call-tools {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      max-width: 300px;
+      margin: 0 auto;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s;
+    }
+
+    .in-call-tools.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .tool-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      background: none;
+      border: none;
+      color: #fff;
+      cursor: pointer;
+    }
+
+    .tool-icon-circle {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      backdrop-filter: blur(10px);
+    }
+
+    .tool-label {
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    /* Call action buttons (Accept / Decline) */
+    .call-controls {
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      width: 100%;
+      max-width: 320px;
+      margin: 0 auto;
+    }
+
+    .call-btn {
+      width: 76px;
+      height: 76px;
+      border-radius: 50%;
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 32px;
+      color: #fff;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+      transition: transform 0.15s ease;
+    }
+
+    .call-btn:active {
+      transform: scale(0.9);
+    }
+
+    .btn-decline {
+      background: #ef4444;
+      box-shadow: 0 8px 24px rgba(239, 68, 68, 0.45);
+    }
+
+    .btn-accept {
+      background: #10b981;
+      box-shadow: 0 8px 24px rgba(16, 185, 129, 0.45);
+      animation: bounce-accept 1.5s infinite;
+    }
+
+    @keyframes bounce-accept {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.08); }
+    }
+
+    .call-btn-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .call-btn-label {
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.75);
+      font-weight: 500;
+    }
+
+    /* ========================================================
+       FULLSCREEN EMERGENCY / PANIC OVERLAY (TIMEOUT)
+    ======================================================== */
+    .panic-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: #450a0a;
+      z-index: 10000;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 40px 24px calc(var(--safe-bottom) + 24px) 24px;
+      display: none;
+    }
+
+    .panic-overlay.active {
+      display: flex;
+      animation: panic-flash 1.2s infinite ease-in-out alternate;
+    }
+
+    @keyframes panic-flash {
+      0% { background: #450a0a; }
+      100% { background: #7f1d1d; }
+    }
+
+    .panic-header {
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+      margin-top: 20px;
+    }
+
+    .panic-icon-wrap {
+      width: 90px;
+      height: 90px;
+      border-radius: 50%;
+      background: rgba(239, 68, 68, 0.25);
+      border: 3px solid #ef4444;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 44px;
+      color: #ef4444;
+      animation: icon-strobe 0.8s infinite alternate;
+    }
+
+    @keyframes icon-strobe {
+      from { transform: scale(1); box-shadow: 0 0 10px rgba(239, 68, 68, 0.4); }
+      to { transform: scale(1.12); box-shadow: 0 0 30px rgba(239, 68, 68, 0.9); }
+    }
+
+    .panic-title {
+      font-size: 26px;
+      font-weight: 800;
+      color: #fff;
+      text-align: center;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .panic-desc {
+      font-size: 15px;
+      color: #fca5a5;
+      text-align: center;
+      line-height: 1.4;
+      max-width: 320px;
+    }
+
+    .panic-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      width: 100%;
+      max-width: 380px;
+      margin: 0 auto;
+    }
+
+    .btn-sos-send {
+      background: #ef4444;
+      color: #fff;
+      border: none;
+      border-radius: 18px;
+      padding: 19px 20px;
+      font-size: 18px;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      box-shadow: 0 8px 30px rgba(239, 68, 68, 0.6);
+      text-transform: uppercase;
+    }
+
+    .btn-sos-send:active {
+      transform: scale(0.97);
+    }
+
+    .btn-panic-cancel {
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #fff;
+      padding: 15px;
+      border-radius: 16px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: center;
+    }
+
+    /* Modal / Toast notification */
+    .toast {
+      position: fixed;
+      bottom: calc(var(--safe-bottom) + 30px);
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      color: #fff;
+      padding: 12px 22px;
+      border-radius: 30px;
+      font-size: 14px;
+      font-weight: 600;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(12px);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 1000;
+      white-space: nowrap;
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
+    /* Subtle footer info */
+    footer {
+      text-align: center;
+      font-size: 12px;
+      color: var(--text-muted);
+      padding: 10px 20px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- App Header -->
+  <header>
+    <div class="brand">
+      <div class="brand-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        </svg>
+      </div>
+      <div class="brand-title">HomeSafe</div>
+    </div>
+    <button class="lang-toggle" id="langToggleBtn" onclick="toggleLanguage()">
+      🌐 <span id="langLabel">RU</span>
+    </button>
+  </header>
+
+  <!-- Main Container -->
+  <main class="container">
+
+    <!-- Walk Timer Card -->
+    <section class="card" id="timerCard">
+      <div class="card-title">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <polyline points="12 6 12 12 16 14"></polyline>
+        </svg>
+        <span data-i18n="timerTitle">Таймер пути домой</span>
+      </div>
+
+      <!-- Circular Timer Display -->
+      <div class="timer-display-wrap">
+        <div class="timer-ring-container">
+          <svg class="timer-svg" viewBox="0 0 220 220">
+            <circle class="timer-circle-bg" cx="110" cy="110" r="100"></circle>
+            <circle class="timer-circle-progress" id="progressRing" cx="110" cy="110" r="100"></circle>
+          </svg>
+          <div class="timer-text-content">
+            <div class="time-digits" id="timeDigits">15:00</div>
+            <div class="timer-sublabel" id="timerSublabel" data-i18n="readyLabel">Готов к выходу</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Controls: Idle State (Select duration & Start) -->
+      <div id="setupControls">
+        <div class="duration-pills">
+          <button class="pill-btn" onclick="selectDuration(5, this)">5 <span data-i18n="min">мин</span></button>
+          <button class="pill-btn" onclick="selectDuration(10, this)">10 <span data-i18n="min">мин</span></button>
+          <button class="pill-btn active" onclick="selectDuration(15, this)">15 <span data-i18n="min">мин</span></button>
+          <button class="pill-btn" onclick="selectDuration(30, this)">30 <span data-i18n="min">мин</span></button>
+        </div>
+
+        <div class="custom-row">
+          <span data-i18n="customTime">Свой вариант:</span>
+          <input type="number" id="customMinutesInput" class="custom-input" placeholder="например 20" min="1" max="180" oninput="handleCustomInput(this.value)">
+          <span data-i18n="min">мин</span>
+        </div>
+
+        <button class="btn-main btn-start" onclick="startWalkTimer()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+          </svg>
+          <span data-i18n="btnStart">Я вышел(а) / Start Walk</span>
+        </button>
+      </div>
+
+      <!-- Controls: Active Timer State -->
+      <div id="activeControls" style="display: none;">
+        <div class="timer-active-actions">
+          <button class="btn-main btn-safe" onclick="markSafe()">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            <span data-i18n="btnSafe">Я дома! / I'm Safe</span>
+          </button>
+
+          <button class="btn-extend" onclick="addMinutes(5)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            <span data-i18n="btnAddFive">+5 минут (задерживаюсь)</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Fast Actions Section -->
+    <div class="actions-grid">
+      <!-- Fake Call Button -->
+      <div class="action-card fake-call-btn" onclick="triggerFakeCall()">
+        <div class="card-icon-box icon-call">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+          </svg>
+        </div>
+        <div class="action-card-text">
+          <div class="action-card-title" data-i18n="fakeCallTitle">Ложный звонок</div>
+          <div class="action-card-desc" data-i18n="fakeCallDesc">Входящий от Мамы</div>
+        </div>
+      </div>
+
+      <!-- Quick Share Status Button -->
+      <div class="action-card share-status-btn" onclick="shareWalkStatus()">
+        <div class="card-icon-box icon-share">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="18" cy="5" r="3"></circle>
+            <circle cx="6" cy="12" r="3"></circle>
+            <circle cx="18" cy="19" r="3"></circle>
+            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+          </svg>
+        </div>
+        <div class="action-card-text">
+          <div class="action-card-title" data-i18n="shareStatusTitle">Статус близким</div>
+          <div class="action-card-desc" data-i18n="shareStatusDesc">Отправить в чат</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Safety Hint -->
+    <div class="status-toast" id="safetyNote">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+      </svg>
+      <span data-i18n="safetyBanner">HomeSafe защитит вас: при истечении таймера включится режим SOS.</span>
+    </div>
+
+  </main>
+
+  <footer>
+    HomeSafe Mini App &bull; Safety Companion
+  </footer>
+
+  <!-- ========================================================
+       REALISTIC FAKE CALL SCREEN
+  ======================================================== -->
+  <div class="fake-call-overlay" id="fakeCallOverlay">
+    <div class="fake-call-top">
+      <div class="caller-avatar">👩</div>
+      <div class="caller-name" id="callerName" data-i18n="momName">Мама</div>
+      <div class="caller-status" id="callerStatus" data-i18n="callingStatus">Входящий вызов...</div>
+    </div>
+
+    <!-- Active Call UI (Keypad, Mute, Audio) -->
+    <div class="in-call-tools" id="inCallTools">
+      <button class="tool-btn" onclick="toggleMute(this)">
+        <div class="tool-icon-circle">🎤</div>
+        <span class="tool-label" data-i18n="toolMute">Микрофон</span>
+      </button>
+      <button class="tool-btn">
+        <div class="tool-icon-circle">⌨️</div>
+        <span class="tool-label" data-i18n="toolKeypad">Клавиши</span>
+      </button>
+      <button class="tool-btn">
+        <div class="tool-icon-circle">🔊</div>
+        <span class="tool-label" data-i18n="toolSpeaker">Динамик</span>
+      </button>
+    </div>
+
+    <!-- Controls Row -->
+    <div class="call-controls">
+      <!-- Decline / End Call -->
+      <div class="call-btn-wrapper">
+        <button class="call-btn btn-decline" onclick="declineFakeCall()">
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.42 19.42 0 0 1-3.33-2.67m-2.67-3.34a19.79 19.79 0 0 1-3.07-8.63A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91"></path>
+            <line x1="23" y1="1" x2="1" y2="23"></line>
+          </svg>
+        </button>
+        <span class="call-btn-label" id="declineLabel" data-i18n="declineCall">Сбросить</span>
+      </div>
+
+      <!-- Accept Call (Hidden once in-call) -->
+      <div class="call-btn-wrapper" id="acceptWrapper">
+        <button class="call-btn btn-accept" onclick="acceptFakeCall()">
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+          </svg>
+        </button>
+        <span class="call-btn-label" data-i18n="acceptCall">Ответить</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================
+       PANIC / ALARM OVERLAY (ON TIMEOUT)
+  ======================================================== -->
+  <div class="panic-overlay" id="panicOverlay">
+    <div class="panic-header">
+      <div class="panic-icon-wrap">🚨</div>
+      <div class="panic-title" data-i18n="panicTitle">ТРЕВОГА! ВРЕМЯ ИСТЕКЛО</div>
+      <div class="panic-desc" data-i18n="panicDesc">
+        Вы не подтвердили безопасное прибытие домой. Отправьте экстренный сигнал близким.
+      </div>
+    </div>
+
+    <div class="panic-actions">
+      <button class="btn-sos-send" onclick="sendEmergencySOS()">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        <span data-i18n="btnPanicSOS">ОТПРАВИТЬ SOS БЛИЗКИМ</span>
+      </button>
+
+      <button class="btn-panic-cancel" onclick="dismissPanic()">
+        <span data-i18n="btnPanicCancel">Я в безопасности / Отключить</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Notification Toast -->
+  <div class="toast" id="toastMessage">Сообщение</div>
+
+  <script>
+    /* ========================================================
+       TELEGRAM WEBAPP INITIALIZATION
+    ======================================================== */
+    const tg = window.Telegram?.WebApp;
+    if (tg) {
+      try {
+        tg.ready();
+        tg.expand();
+        tg.setHeaderColor?.('#090d16');
+        tg.setBackgroundColor?.('#090d16');
+      } catch (e) {
+        console.warn('Telegram WebApp context init:', e);
+      }
+    }
+
+    function triggerHaptic(type = 'light') {
+      try {
+        if (tg?.HapticFeedback) {
+          if (type === 'error') {
+            tg.HapticFeedback.notificationOccurred('error');
+          } else if (type === 'success') {
+            tg.HapticFeedback.notificationOccurred('success');
+          } else if (type === 'warning') {
+            tg.HapticFeedback.notificationOccurred('warning');
+          } else {
+            tg.HapticFeedback.impactOccurred('medium');
+          }
+        } else if (navigator.vibrate) {
+          if (type === 'error') navigator.vibrate([200, 100, 200, 100, 400]);
+          else navigator.vibrate(40);
+        }
+      } catch (err) {}
+    }
+
+    /* ========================================================
+       I18N / TRANSLATIONS (EN & RU)
+    ======================================================== */
+    let currentLang = 'ru';
+
+    const i18n = {
+      ru: {
+        timerTitle: "Таймер пути домой",
+        readyLabel: "Готов к выходу",
+        walkingLabel: "В пути домой...",
+        min: "мин",
+        customTime: "Свой вариант:",
+        btnStart: "Я вышел(а) / Start Walk",
+        btnSafe: "Я дома! / I'm Safe",
+        btnAddFive: "+5 минут (задерживаюсь)",
+        fakeCallTitle: "Ложный звонок",
+        fakeCallDesc: "Входящий от Мамы",
+        shareStatusTitle: "Статус близким",
+        shareStatusDesc: "Отправить в чат",
+        safetyBanner: "HomeSafe защитит вас: при истечении таймера включится режим SOS.",
+        momName: "Мама",
+        callingStatus: "Входящий вызов...",
+        inCallConnected: "Разговор...",
+        toolMute: "Микрофон",
+        toolKeypad: "Клавиши",
+        toolSpeaker: "Динамик",
+        declineCall: "Сбросить",
+        endCall: "Завершить",
+        acceptCall: "Ответить",
+        panicTitle: "ТРЕВОГА! ВРЕМЯ ИСТЕКЛО",
+        panicDesc: "Вы не подтвердили прибытие домой. Экран тревоги активирован!",
+        btnPanicSOS: "ОТПРАВИТЬ SOS БЛИЗКИМ",
+        btnPanicCancel: "Я в безопасности / Отключить",
+        safeToast: "Отлично! Вы дома в безопасности 🎉",
+        statusCopied: "Текст скопирован в буфер обмена!",
+        callFinished: "Вызов завершён",
+        sosMessage: "🚨 ВНИМАНИЕ, ТРЕВОГА! Я должен(на) был(а) быть дома, но таймер HomeSafe истек, и я не подтвердил(а) безопасность! Пожалуйста, свяжись со мной срочно!",
+        statusTemplate: (mins) => `Я иду домой, буду примерно через ${mins} минут. Если не напишу - позвони мне!`
+      },
+      en: {
+        timerTitle: "Walk Home Timer",
+        readyLabel: "Ready to walk",
+        walkingLabel: "Walking home...",
+        min: "min",
+        customTime: "Custom time:",
+        btnStart: "Start Walk",
+        btnSafe: "I'm Safe!",
+        btnAddFive: "+5 mins (I'm delayed)",
+        fakeCallTitle: "Fake Call",
+        fakeCallDesc: "Incoming call from Mom",
+        shareStatusTitle: "Share Status",
+        shareStatusDesc: "Send to loved ones",
+        safetyBanner: "HomeSafe keeps you covered: if timer runs out, SOS alarm fires.",
+        momName: "Mom",
+        callingStatus: "Incoming Call...",
+        inCallConnected: "Connected...",
+        toolMute: "Mute",
+        toolKeypad: "Keypad",
+        toolSpeaker: "Speaker",
+        declineCall: "Decline",
+        endCall: "End",
+        acceptCall: "Accept",
+        panicTitle: "ALERT! TIMER EXPIRED",
+        panicDesc: "You haven't checked in safe. Emergency alert mode triggered!",
+        btnPanicSOS: "SEND SOS TO CONTACTS",
+        btnPanicCancel: "I'm Safe / Dismiss Alarm",
+        safeToast: "Great! You are safe and sound 🎉",
+        statusCopied: "Status message copied to clipboard!",
+        callFinished: "Call ended",
+        sosMessage: "🚨 EMERGENCY ALERT! I was scheduled to be home, but my HomeSafe timer ran out and I haven't checked in! Please call or check on me immediately!",
+        statusTemplate: (mins) => `I'm heading home, should be there in about ${mins} minutes. If I don't text you, please call me!`
+      }
+    };
+
+    function applyTranslations() {
+      const dict = i18n[currentLang];
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if (dict[key]) {
+          el.textContent = dict[key];
+        }
+      });
+      document.getElementById('langLabel').textContent = currentLang === 'ru' ? 'EN' : 'RU';
+      
+      // Update timer sublabel based on state
+      const sublabelEl = document.getElementById('timerSublabel');
+      if (timerRunning) {
+        sublabelEl.textContent = dict.walkingLabel;
+      } else {
+        sublabelEl.textContent = dict.readyLabel;
+      }
+    }
+
+    function toggleLanguage() {
+      triggerHaptic('light');
+      currentLang = currentLang === 'ru' ? 'en' : 'ru';
+      applyTranslations();
+    }
+
+    /* ========================================================
+       TOAST UTILITY
+    ======================================================== */
+    let toastTimeout = null;
+    function showToast(msg) {
+      const t = document.getElementById('toastMessage');
+      t.textContent = msg;
+      t.classList.add('show');
+      clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        t.classList.remove('show');
+      }, 2600);
+    }
+
+    /* ========================================================
+       TIMER LOGIC
+    ======================================================== */
+    let selectedMinutes = 15;
+    let totalSeconds = 15 * 60;
+    let remainingSeconds = 15 * 60;
+    let timerInterval = null;
+    let timerRunning = false;
+    const progressRing = document.getElementById('progressRing');
+    const ringCircumference = 2 * Math.PI * 100; // 628.318
+
+    progressRing.style.strokeDasharray = `${ringCircumference}`;
+    progressRing.style.strokeDashoffset = `0`;
+
+    function updateTimerUI() {
+      const mins = Math.floor(remainingSeconds / 60);
+      const secs = remainingSeconds % 60;
+      document.getElementById('timeDigits').textContent = 
+        `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+      
+      const fraction = remainingSeconds / totalSeconds;
+      const offset = ringCircumference - (fraction * ringCircumference);
+      progressRing.style.strokeDashoffset = isNaN(offset) ? 0 : offset;
+
+      if (remainingSeconds <= 60 && timerRunning) {
+        progressRing.style.stroke = 'var(--accent-red)';
+      } else {
+        progressRing.style.stroke = 'var(--accent-cyan)';
+      }
+    }
+
+    function selectDuration(mins, btnElement) {
+      if (timerRunning) return;
+      triggerHaptic('light');
+      selectedMinutes = mins;
+      totalSeconds = mins * 60;
+      remainingSeconds = totalSeconds;
+      document.getElementById('customMinutesInput').value = '';
+      document.querySelectorAll('.pill-btn').forEach(btn => btn.classList.remove('active'));
+      if (btnElement) btnElement.classList.add('active');
+      updateTimerUI();
+    }
+
+    function handleCustomInput(val) {
+      if (timerRunning) return;
+      const num = parseInt(val, 10);
+      if (num && num > 0) {
+        document.querySelectorAll('.pill-btn').forEach(btn => btn.classList.remove('active'));
+        selectedMinutes = num;
+        totalSeconds = num * 60;
+        remainingSeconds = totalSeconds;
+        updateTimerUI();
+      }
+    }
+
+    function startWalkTimer() {
+      if (remainingSeconds <= 0) {
+        remainingSeconds = selectedMinutes * 60;
+        totalSeconds = remainingSeconds;
+      }
+      triggerHaptic('success');
+      timerRunning = true;
+      document.getElementById('setupControls').style.display = 'none';
+      document.getElementById('activeControls').style.display = 'block';
+      document.getElementById('timerSublabel').textContent = i18n[currentLang].walkingLabel;
+
+      clearInterval(timerInterval);
+      timerInterval = setInterval(() => {
+        remainingSeconds--;
+        updateTimerUI();
+
+        if (remainingSeconds <= 0) {
+          clearInterval(timerInterval);
+          triggerPanicAlert();
+        }
+      }, 1000);
+    }
+
+    function addMinutes(extraMins) {
+      triggerHaptic('light');
+      remainingSeconds += extraMins * 60;
+      totalSeconds += extraMins * 60;
+      updateTimerUI();
+      showToast(`+${extraMins} ${i18n[currentLang].min}`);
+    }
+
+    function markSafe() {
+      clearInterval(timerInterval);
+      timerRunning = false;
+      triggerHaptic('success');
+      remainingSeconds = selectedMinutes * 60;
+      totalSeconds = remainingSeconds;
+      updateTimerUI();
+
+      document.getElementById('setupControls').style.display = 'block';
+      document.getElementById('activeControls').style.display = 'none';
+      document.getElementById('timerSublabel').textContent = i18n[currentLang].readyLabel;
+      showToast(i18n[currentLang].safeToast);
+    }
+
+    /* ========================================================
+       SYNTHESIZED AUDIO (Ringtone & Emergency Siren)
+       Works reliably without external assets or audio files!
+    ======================================================== */
+    let audioCtx = null;
+    let ringtoneOscillatorInterval = null;
+    let panicAudioInterval = null;
+
+    function getAudioContext() {
+      if (!audioCtx) {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioContextClass();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      return audioCtx;
+    }
+
+    function startFakeRingtone() {
+      stopFakeRingtone();
+      try {
+        const ctx = getAudioContext();
+        let beepCount = 0;
+        
+        function playTone(freq, duration) {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, ctx.currentTime);
+          gain.gain.setValueAtTime(0.18, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start();
+          osc.stop(ctx.currentTime + duration);
+        }
+
+        // Standard classic telephone cadence
+        ringtoneOscillatorInterval = setInterval(() => {
+          playTone(440, 0.4);
+          setTimeout(() => playTone(480, 0.4), 80);
+          triggerHaptic('light');
+          beepCount++;
+          if (beepCount > 25) stopFakeRingtone();
+        }, 1800);
+
+        playTone(440, 0.4);
+        setTimeout(() => playTone(480, 0.4), 80);
+      } catch (e) {
+        console.warn('Audio ringtone synth error:', e);
+      }
+    }
+
+    function stopFakeRingtone() {
+      if (ringtoneOscillatorInterval) {
+        clearInterval(ringtoneOscillatorInterval);
+        ringtoneOscillatorInterval = null;
+      }
+    }
+
+    function startEmergencySiren() {
+      stopEmergencySiren();
+      try {
+        const ctx = getAudioContext();
+        let high = false;
+
+        function playSirenPulse() {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sawtooth';
+          const freq = high ? 950 : 650;
+          high = !high;
+          osc.frequency.setValueAtTime(freq, ctx.currentTime);
+          gain.gain.setValueAtTime(0.28, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.38);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.4);
+          triggerHaptic('error');
+        }
+
+        panicAudioInterval = setInterval(playSirenPulse, 500);
+        playSirenPulse();
+      } catch (e) {}
+    }
+
+    function stopEmergencySiren() {
+      if (panicAudioInterval) {
+        clearInterval(panicAudioInterval);
+        panicAudioInterval = null;
+      }
+    }
+
+    /* ========================================================
+       FAKE CALL FUNCTIONALITY
+    ======================================================== */
+    let callConnectedTimer = null;
+    let callDurationSecs = 0;
+
+    function triggerFakeCall() {
+      triggerHaptic('light');
+      startFakeRingtone();
+      const overlay = document.getElementById('fakeCallOverlay');
+      overlay.classList.add('active');
+
+      // Reset to incoming call state
+      document.getElementById('acceptWrapper').style.display = 'flex';
+      document.getElementById('inCallTools').classList.remove('visible');
+      document.getElementById('callerStatus').textContent = i18n[currentLang].callingStatus;
+      document.getElementById('declineLabel').textContent = i18n[currentLang].declineCall;
+      callDurationSecs = 0;
+      clearInterval(callConnectedTimer);
+    }
+
+    function acceptFakeCall() {
+      stopFakeRingtone();
+      triggerHaptic('medium');
+      document.getElementById('acceptWrapper').style.display = 'none';
+      document.getElementById('inCallTools').classList.add('visible');
+      document.getElementById('declineLabel').textContent = i18n[currentLang].endCall;
+
+      callDurationSecs = 0;
+      document.getElementById('callerStatus').textContent = "00:00";
+
+      clearInterval(callConnectedTimer);
+      callConnectedTimer = setInterval(() => {
+        callDurationSecs++;
+        const mins = String(Math.floor(callDurationSecs / 60)).padStart(2, '0');
+        const secs = String(callDurationSecs % 60).padStart(2, '0');
+        document.getElementById('callerStatus').textContent = `${mins}:${secs}`;
+      }, 1000);
+    }
+
+    function declineFakeCall() {
+      stopFakeRingtone();
+      triggerHaptic('light');
+      clearInterval(callConnectedTimer);
+      const overlay = document.getElementById('fakeCallOverlay');
+      overlay.classList.remove('active');
+      showToast(i18n[currentLang].callFinished);
+    }
+
+    function toggleMute(btn) {
+      triggerHaptic('light');
+      btn.style.opacity = btn.style.opacity === '0.5' ? '1' : '0.5';
+    }
+
+    /* ========================================================
+       QUICK SOS / SHARE STATUS
+    ======================================================== */
+    function shareWalkStatus() {
+      triggerHaptic('light');
+      const mins = Math.max(1, Math.round(remainingSeconds / 60));
+      const message = i18n[currentLang].statusTemplate(mins);
+
+      // Try Telegram native share / link
+      const telegramShareUrl = `https://t.me/share/url?url=${encodeURIComponent(message)}`;
+
+      if (tg && typeof tg.openTelegramLink === 'function') {
+        try {
+          tg.openTelegramLink(telegramShareUrl);
+          return;
+        } catch (err) {}
+      }
+
+      if (navigator.share) {
+        navigator.share({
+          title: 'HomeSafe',
+          text: message
+        }).catch(() => {
+          copyToClipboard(message);
+        });
+      } else {
+        copyToClipboard(message);
+      }
+    }
+
+    function copyToClipboard(text) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+          showToast(i18n[currentLang].statusCopied);
+        }).catch(() => {
+          fallbackPromptCopy(text);
+        });
+      } else {
+        fallbackPromptCopy(text);
+      }
+    }
+
+    function fallbackPromptCopy(text) {
+      window.prompt("Скопируйте текст сообщения:", text);
+    }
+
+    /* ========================================================
+       PANIC & TIMEOUT ALERT
+    ======================================================== */
+    function triggerPanicAlert() {
+      const panicOverlay = document.getElementById('panicOverlay');
+      panicOverlay.classList.add('active');
+      startEmergencySiren();
+    }
+
+    function dismissPanic() {
+      stopEmergencySiren();
+      triggerHaptic('success');
+      document.getElementById('panicOverlay').classList.remove('active');
+      markSafe();
+    }
+
+    function sendEmergencySOS() {
+      triggerHaptic('error');
+      const sosText = i18n[currentLang].sosMessage;
+      const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(sosText)}`;
+
+      if (tg && typeof tg.openTelegramLink === 'function') {
+        try {
+          tg.openTelegramLink(shareUrl);
+          return;
+        } catch (e) {}
+      }
+
+      if (navigator.share) {
+        navigator.share({
+          title: '🚨 EMERGENCY SOS',
+          text: sosText
+        }).catch(() => {
+          copyToClipboard(sosText);
+        });
+      } else {
+        copyToClipboard(sosText);
+      }
+    }
+
+    // Init display
+    updateTimerUI();
+    applyTranslations();
+  </script>
+</body>
+</html>
